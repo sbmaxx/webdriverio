@@ -18,26 +18,26 @@ const FAKE_SUCCESS_RESPONSE = {
 
 describe.only('saving screenshot on error', function() {
 
-    var client
+    let client
 
     beforeEach(function() {
-        var localConf = merge({}, conf)
+        let localConf = merge({}, conf)
         localConf.screenshotPath = 'some_directory'
         localConf.connectionRetryCount = 1
         client = WebdriverIO.remote(localConf)
 
         // for screenshot
-        sinon.stub(fs, 'existsSync').returns(true)
-        sinon.stub(fs, 'writeFile').yields(true)
+        sinon.stub(fs, 'statSync').returns(true)
+        sinon.stub(fs, 'writeFileSync').yields(true)
     })
 
     afterEach(function() {
-        fs.existsSync.restore()
-        fs.writeFile.restore()
+        fs.statSync.restore()
+        fs.writeFileSync.restore()
         nock.cleanAll()
     })
 
-    it('should save screenshot before session end', function(done) {
+    it('should save screenshot before session end', async function() {
 
         nock('http://localhost:4444')
             .post('/wd/hub/session')
@@ -49,19 +49,19 @@ describe.only('saving screenshot on error', function() {
                 .reply(200, FAKE_SUCCESS_RESPONSE)
 
         // finally call — client.end
-        var spy = sinon.spy()
-        client.init().click('#notExists').finally(spy)
+        let spy = sinon.spy()
+        await client.init().click('#notExists').finally(spy)
 
-        setTimeout(function() {
+        // setTimeout(function() {
             expect(fs.writeFile.calledOnce).to.be.true
             expect(fs.writeFile.calledBefore(spy)).to.be.true
-            done()
-        }, 300)
+            // done()
+        // }, 300)
     })
 
-    it('should not be the cause of recursion', function(done) {
+    it('should not be the cause of recursion', async function() {
 
-        var spy = sinon.stub().returns('some error')
+        let spy = sinon.stub().returns('some error')
 
         nock('http://localhost:4444')
             .post('/wd/hub/session')
@@ -72,13 +72,13 @@ describe.only('saving screenshot on error', function() {
                 .times(Infinity)
                 .reply(500, spy)
 
-        client.init().click('#notExists')
+        await client.init().click('#notExists')
 
-        setTimeout(function() {
+        // setTimeout(function() {
             expect(fs.writeFile.called).to.be.false
             expect(spy.calledOnce).to.be.true
-            done()
-        }, 100)
+            // done()
+        // }, 100)
     })
 
 })
