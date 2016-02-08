@@ -3,6 +3,9 @@ import conf from '../../conf/index.js'
 import fs from 'fs'
 import nock from 'nock'
 import sinon from 'sinon'
+import chai from 'chai'
+
+const expect = chai.expect
 
 const WebdriverIO = require('../../../')
 
@@ -16,12 +19,12 @@ const FAKE_SUCCESS_RESPONSE = {
     value: 'ok'
 }
 
-describe.only('saving screenshot on error', function() {
+describe('saving screenshot on error', function() {
 
     let client
 
     beforeEach(function() {
-        let localConf = merge({}, conf)
+        const localConf = merge({}, conf)
         localConf.screenshotPath = 'some_directory'
         localConf.connectionRetryCount = 1
         client = WebdriverIO.remote(localConf)
@@ -37,7 +40,9 @@ describe.only('saving screenshot on error', function() {
         nock.cleanAll()
     })
 
-    it('should save screenshot before session end', async function() {
+    // it.only('dummy', () => assert.isTrue(true))
+
+    it.only('should save screenshot before session end', function(done) {
 
         nock('http://localhost:4444')
             .post('/wd/hub/session')
@@ -50,13 +55,17 @@ describe.only('saving screenshot on error', function() {
 
         // finally call — client.end
         let spy = sinon.spy()
-        await client.init().click('#notExists').finally(spy)
+        client.init().click('#notExists').then(function() {
+            console.log('ok');
+        }).catch(function() {
+            console.log('err');
+        }).finally((err) => console.log('ololo?!'))
 
-        // setTimeout(function() {
-            expect(fs.writeFile.calledOnce).to.be.true
-            expect(fs.writeFile.calledBefore(spy)).to.be.true
-            // done()
-        // }, 300)
+        setTimeout(function() {
+            expect(fs.writeFileSync.calledOnce).to.be.true
+            expect(fs.writeFileSync.calledBefore(spy)).to.be.true
+            done()
+        }, 300)
     })
 
     it('should not be the cause of recursion', async function() {
